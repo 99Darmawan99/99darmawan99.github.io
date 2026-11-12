@@ -1,0 +1,256 @@
+<#
+==================================================================
+  IT TOOLKIT INTERAKTIF UTILITY - COMPLETE EDITION
+==================================================================
+#>
+
+function Show-Menu {
+    Clear-Host
+    Write-Host "======================================================" -ForegroundColor Cyan
+    Write-Host "         IT TOOLKIT UTILITY - ENTERPRISE SUPPORT       " -ForegroundColor Yellow
+    Write-Host "======================================================" -ForegroundColor Cyan
+    Write-Host " 1. Network Utilities (Reset IP, DNS & Flush Cache)"
+    Write-Host " 2. Clean Junk Files (Temp, Prefetch & Disk Cleanup)"
+    Write-Host " 3. Windows System Maintenance (SFC & DISM Repair)"
+    Write-Host " 4. Office 365 Repair & License Reset Tool"
+    Write-Host " 5. Restart Windows directly to BIOS / UEFI"
+    Write-Host " 6. Printer Spooler Control (Start / Stop / Clear Queue)"
+    Write-Host " 7. Windows Defender Control (ON / OFF Protection)"
+    Write-Host " 8. Informasi Spesifikasi PC & IP Address Detail"
+    Write-Host " 9. Network Diagnostics & Latency Test (Ping Check)" -ForegroundColor Green
+    Write-Host "10. Buka Shortcut Tools Administrasi Windows" -ForegroundColor Green
+    Write-Host "11. Ekspor Laporan Spesifikasi & IP ke Desktop (.txt)" -ForegroundColor Green
+    Write-Host " 0. Keluar"
+    Write-Host "======================================================" -ForegroundColor Cyan
+}
+
+do {
+    Show-Menu
+    $choice = Read-Host "Pilih menu [0-11]"
+
+    switch ($choice) {
+        '1' {
+            Write-Host "`n[+] Memperbaiki Network & DNS..." -ForegroundColor Green
+            ipconfig /flushdns
+            ipconfig /release
+            ipconfig /renew
+            netsh winsock reset
+            netsh int ip reset
+            Write-Host "`n[V] Network reset selesai! Silakan restart jika diperlukan." -ForegroundColor Yellow
+            Pause
+        }
+        '2' {
+            Write-Host "`n[+] Membersihkan File Sampah (System Clean)..." -ForegroundColor Green
+            Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -Path "C:\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -Path "C:\Windows\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
+            cleanmgr /sagerun:1
+            Write-Host "`n[V] Pembersihan file temporer dan cache selesai!" -ForegroundColor Yellow
+            Pause
+        }
+        '3' {
+            Write-Host "`n[+] Menjalankan Maintenance & Perbaikan Sistem Windows..." -ForegroundColor Green
+            Write-Host "[1/3] Menjalankan SFC Scan..." -ForegroundColor Cyan
+            sfc /scannow
+            Write-Host "[2/3] Menjalankan DISM CheckHealth..." -ForegroundColor Cyan
+            dism /online /cleanup-image /checkhealth
+            Write-Host "[3/3] Menjalankan DISM RestoreHealth..." -ForegroundColor Cyan
+            dism /online /cleanup-image /restorehealth
+            Write-Host "`n[V] Pemeliharaan sistem selesai." -ForegroundColor Yellow
+            Pause
+        }
+        '4' {
+            Write-Host "`n[+] Office 365 Maintenance Tool..." -ForegroundColor Green
+            Write-Host "1. Jalankan Quick Repair Office"
+            Write-Host "2. Tampilkan Lisensi Office Terpasang"
+            Write-Host "3. Hapus Cache Aktivasi Office"
+            $offChoice = Read-Host "Pilih opsi [1-3]"
+            if ($offChoice -eq '1') {
+                Start-Process "C:\Program Files\Common Files\microsoft shared\ClickToRun\OfficeClickToRun.exe" -ArgumentList "scenario=Repair platform=x86 culture=en-us RepairType=QuickRepair" -Wait
+            } elseif ($offChoice -eq '2') {
+                cscript "C:\Program Files\Microsoft Office\Office16\OSPP.VBS" /dstatus
+            } elseif ($offChoice -eq '3') {
+                Remove-Item -Path "$env:LOCALAPPDATA\Microsoft\Office\16.0\Licensing\*" -Recurse -Force -ErrorAction SilentlyContinue
+                Write-Host "Cache lisensi berhasil dibersihkan." -ForegroundColor Yellow
+            }
+            Pause
+        }
+        '5' {
+            $confirm = Read-Host "Apakah Anda yakin ingin merestart komputer ke BIOS/UEFI sekarang? (Y/N)"
+            if ($confirm -eq 'Y' -or $confirm -eq 'y') {
+                shutdown /r /fw /t 0
+            }
+        }
+        '6' {
+            Write-Host "`n[+] Printer Spooler Control..." -ForegroundColor Green
+            Write-Host "1. Stop Print Spooler & Clear Queue"
+            Write-Host "2. Start Print Spooler"
+            $spoolChoice = Read-Host "Pilih opsi [1-2]"
+            if ($spoolChoice -eq '1') {
+                Stop-Service -Name Spooler -Force
+                Remove-Item -Path "$env:SystemRoot\System32\spool\PRINTERS\*" -Force -ErrorAction SilentlyContinue
+                Write-Host "[V] Print Spooler DIHENTIKAN dan antrean cetak dihapus." -ForegroundColor Red
+            } elseif ($spoolChoice -eq '2') {
+                Start-Service -Name Spooler
+                Write-Host "[V] Print Spooler AKTIF kembali." -ForegroundColor Green
+            }
+            Pause
+        }
+        '7' {
+            Write-Host "`n[+] Windows Defender Control..." -ForegroundColor Green
+            Write-Host "1. Aktifkan Defender & Real-Time Protection (ON)"
+            Write-Host "2. Matikan Defender Real-Time & Drive Protection (OFF)"
+            $defChoice = Read-Host "Pilih opsi [1-2]"
+            
+            if ($defChoice -eq '1') {
+                Set-MpPreference -DisableRealtimeMonitoring $false -ErrorAction SilentlyContinue
+                Set-MpPreference -DisableBehaviorMonitoring $false -ErrorAction SilentlyContinue
+                Set-MpPreference -DisableIOAVProtection $false -ErrorAction SilentlyContinue
+                Remove-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender" -Name "DisableAntiSpyware" -ErrorAction SilentlyContinue
+                Remove-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" -Name "DisableRealtimeMonitoring" -ErrorAction SilentlyContinue
+                Update-MpSignature -ErrorAction SilentlyContinue
+                Write-Host "`n[V] Windows Defender & Real-Time Protection BERHASIL DIAKTIFKAN." -ForegroundColor Green
+            } elseif ($defChoice -eq '2') {
+                Set-MpPreference -DisableRealtimeMonitoring $true -ErrorAction SilentlyContinue
+                Set-MpPreference -DisableBehaviorMonitoring $true -ErrorAction SilentlyContinue
+                Set-MpPreference -DisableIOAVProtection $true -ErrorAction SilentlyContinue
+                Write-Host "`n[!] Windows Defender Real-Time & Drive Scanning BERHASIL DIMATIKAN." -ForegroundColor Red
+            }
+            Pause
+        }
+        '8' {
+            Write-Host "`n======================================================" -ForegroundColor Yellow
+            Write-Host "            SPESIFIKASI SYSTEM & HARDWARE             " -ForegroundColor Yellow
+            Write-Host "======================================================" -ForegroundColor Yellow
+            
+            $os = Get-CimInstance Win32_OperatingSystem
+            $cpu = Get-CimInstance Win32_Processor
+            $cs = Get-CimInstance Win32_ComputerSystem
+            $gpu = Get-CimInstance Win32_VideoController
+            $ramGB = [math]::Round($cs.TotalPhysicalMemory / 1GB, 2)
+
+            Write-Host "Nama Komputer : $env:COMPUTERNAME" -ForegroundColor Cyan
+            Write-Host "Domain/Workgrp: $($cs.Domain)" -ForegroundColor Cyan
+            Write-Host "Sistem Operasi: $($os.Caption) ($($os.OSArchitecture))" -ForegroundColor Cyan
+            Write-Host "Prosesor      : $($cpu.Name)" -ForegroundColor Cyan
+            Write-Host "Total RAM     : $ramGB GB" -ForegroundColor Cyan
+            Write-Host "Kartu Grafis  : $($gpu.Name -join ', ')" -ForegroundColor Cyan
+            
+            Write-Host "`n--- Status Penyimpanan (Disk) ---" -ForegroundColor DarkYellow
+            Get-CimInstance Win32_LogicalDisk -Filter "DriveType=3" | ForEach-Object {
+                $freeGB = [math]::Round($_.FreeSpace / 1GB, 2)
+                $sizeGB = [math]::Round($_.Size / 1GB, 2)
+                Write-Host "Drive $($_.DeviceID) Free: $freeGB GB / Total: $sizeGB GB"
+            }
+
+            Write-Host "`n======================================================" -ForegroundColor Yellow
+            Write-Host "             INFORMASI JARINGAN (IP & NET)            " -ForegroundColor Yellow
+            Write-Host "======================================================" -ForegroundColor Yellow
+            
+            Get-NetAdapter | Where-Object Status -eq 'Up' | ForEach-Object {
+                $adapter = $_
+                Write-Host "`nAdapter: $($adapter.Name) ($($adapter.InterfaceDescription))" -ForegroundColor Green
+                Write-Host "MAC Address  : $($adapter.MacAddress)"
+                
+                $ipConfig = Get-NetIPConfiguration -InterfaceIndex $adapter.InterfaceIndex
+                foreach ($ipv4 in $ipConfig.IPv4Address) {
+                    Write-Host "IPv4 Address : $($ipv4.IPAddress)"
+                }
+                foreach ($ipv6 in $ipConfig.IPv6Address) {
+                    Write-Host "IPv6 Address : $($ipv6.IPAddress)"
+                }
+                foreach ($gw in $ipConfig.IPv4DefaultGateway) {
+                    Write-Host "Gateway      : $($gw.NextHop)"
+                }
+                $dnsList = ($ipConfig.DNSServer | Select-Object -ExpandProperty ServerAddresses) -join ', '
+                Write-Host "DNS Servers  : $dnsList"
+            }
+            Write-Host "`n======================================================" -ForegroundColor Yellow
+            Pause
+        }
+        '9' {
+            Write-Host "`n[+] Menjalankan Network Diagnostics & Ping Test..." -ForegroundColor Green
+            
+            # Ambil Gateway Lokal
+            $gw = (Get-NetRoute | Where-Object { $_.DestinationPrefix -eq '0.0.0.0/0' }).NextHop | Select-Object -First 1
+            
+            $targets = @(
+                @{ Name = "Default Gateway ($gw)"; Target = $gw },
+                @{ Name = "Google DNS (8.8.8.8)"; Target = "8.8.8.8" },
+                @{ Name = "Cloudflare DNS (1.1.1.1)"; Target = "1.1.1.1" },
+                @{ Name = "Domain Google (google.com)"; Target = "google.com" }
+            )
+
+            foreach ($item in $targets) {
+                if ($item.Target) {
+                    $ping = Test-Connection -ComputerName $item.Target -Count 2 -Quiet
+                    if ($ping) {
+                        Write-Host "[OK] $($item.Name) -> Terhubung (Reply OK)" -ForegroundColor Green
+                    } else {
+                        Write-Host "[FAIL] $($item.Name) -> Terputus / RTO" -ForegroundColor Red
+                    }
+                }
+            }
+            Pause
+        }
+        '10' {
+            Write-Host "`n[+] Shortcut Administrasi Windows..." -ForegroundColor Green
+            Write-Host "1. Device Manager (devmgmt.msc)"
+            Write-Host "2. Disk Management (diskmgmt.msc)"
+            Write-Host "3. Network Connections (ncpa.cpl)"
+            Write-Host "4. Services (services.msc)"
+            Write-Host "5. Event Viewer (eventvwr.msc)"
+            Write-Host "6. Control Panel (control)"
+            $appChoice = Read-Host "Pilih opsi [1-6]"
+            
+            switch ($appChoice) {
+                '1' { devmgmt.msc }
+                '2' { diskmgmt.msc }
+                '3' { ncpa.cpl }
+                '4' { services.msc }
+                '5' { eventvwr.msc }
+                '6' { control }
+            }
+        }
+        '11' {
+            Write-Host "`n[+] Mengumpulkan data dan mengekspor ke Desktop..." -ForegroundColor Green
+            $filePath = "$env:USERPROFILE\Desktop\IT_Report_$env:COMPUTERNAME.txt"
+            
+            $reportContent = @"
+======================================================
+           LAPORAN SPESIFIKASI & INFRASTRUKTUR PC
+======================================================
+Tanggal Scan : $(Get-Date -Format 'dd-MM-yyyy HH:mm:ss')
+Nama PC      : $env:COMPUTERNAME
+User Aktif   : $env:USERNAME
+
+[HARDWARE & OS]
+OS           : $((Get-CimInstance Win32_OperatingSystem).Caption)
+CPU          : $((Get-CimInstance Win32_Processor).Name)
+RAM Total    : $([math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 2)) GB
+
+[STORAGE]
+$(Get-CimInstance Win32_LogicalDisk -Filter "DriveType=3" | ForEach-Object { "Drive $($_.DeviceID) - Free: $([math]::Round($_.FreeSpace/1GB,2)) GB / Total: $([math]::Round($_.Size/1GB,2)) GB" } | Out-String)
+
+[NETWORK ADAPTERS]
+$(Get-NetAdapter | Where-Object Status -eq 'Up' | ForEach-Object {
+    $idx = $_.InterfaceIndex
+    $ip = Get-NetIPConfiguration -InterfaceIndex $idx
+    "Adapter     : $($_.Name)`nMAC Address : $($_.MacAddress)`nIPv4        : $($ip.IPv4Address.IPAddress -join ', ')`nGateway     : $($ip.IPv4DefaultGateway.NextHop -join ', ')`n"
+} | Out-String)
+======================================================
+"@
+            $reportContent | Out-File -FilePath $filePath -Encoding utf8
+            Write-Host "[V] File laporan berhasil disimpan di Desktop:" -ForegroundColor Yellow
+            Write-Host "    $filePath" -ForegroundColor Cyan
+            Pause
+        }
+        '0' {
+            Write-Host "`nKeluar dari IT Toolkit." -ForegroundColor Cyan
+        }
+        default {
+            Write-Host "`nPilihan tidak valid!" -ForegroundColor Red
+            Pause
+        }
+    }
+} until ($choice -eq '0')
